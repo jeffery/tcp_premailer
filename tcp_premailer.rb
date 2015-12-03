@@ -70,9 +70,9 @@ class MailNet < EventMachine::Connection
 			end
 			html.close
 			html.unlink
-			@log.info "Caching with digest: #{@digest}" unless @digest==nil
 			begin
 				@cache.set(@digest,icss) unless @digest==nil
+				@log.info "Caching with digest: #{@digest}" unless @digest==nil
 				warns.each{|w| @warn.warn w}
 				@cache.set("warnings-"+@digest,warns)
 			rescue Memcached::Error
