@@ -41,8 +41,10 @@ class MailNet < EventMachine::Connection
 			send_data @cache.get(@digest)
 			@log.info "Sent from cache: #{@digest}"
 		rescue Memcached::NotFound
+			@log.info "Cache not found"
 			send_data(process_data(data))
 		rescue Memcached::Error
+			@log.warn "Cache server not available"
 			send_data(process_data(data))
 		end
 		send_data "<!-- DIGEST::"+@digest.to_s+"::DIGEST -->\n"
