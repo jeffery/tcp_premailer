@@ -16,38 +16,37 @@ class MailNet < EventMachine::Connection
 		@digest = nil
 
 		@cache=Memcached.new("#{$config['memcached_host'].to_s}:#{$config['memcached_port'].to_s}")
-		@warn = Logger.new($config['logfile']+".warn",'monthly')
+		@warn = Logger.new($config['logfile']+'.warn','monthly')
 		@warn.level = Logger::WARN	
 		@warn.formatter = proc do |severity, datetime, msg|
 			"[#{severity}] #{datetime} (#{@ip}): #{msg}\n"
 		end
-		@log = Logger.new($config['logfile']+".log",'monthly')
+		@log = Logger.new($config['logfile']+'.log','monthly')
 		@log.level = Logger::INFO
 		@log.formatter = @warn.formatter
 		super
 	end
 	
 	def receive_data(data)
-		port, @ip = Socket.unpack_sockaddr_in(get_peername)
+		@port, @ip = Socket.unpack_sockaddr_in(get_peername)
 		unless $config['username']==data[/^([^:]+):/,1] and $config['password']==data[/^[^:]+:([^:]+):/,1] and $config['allowed'].include?(@ip)
-			@log.fatal "Auth fail"
+			@log.fatal 'Auth fail'
 			close_connection
 			return false
 		end
 		@digest=Digest.hexencode(Digest::SHA256.new.digest(data[/^[^:]+:[^:]+:(.*)/mi,1]))
-		icss=nil
-		@log.info "Data received"
+		@log.info 'Data received'
 		begin
 			send_data @cache.get(@digest)
-			@log.info "Sent from cache: #{@digest}"
+			@log.info "Sent from cache: #{@digest} to #{@ip}:#{@port}"
 		rescue Memcached::NotFound
-			@log.info "Cache not found"
+			@log.info 'Cache not found'
 			send_data(process_data(data))
 		rescue Memcached::Error
-			@log.warn "Cache server not available"
+			@log.warn 'Cache server not available'
 			send_data(process_data(data))
 		end
-		send_data "<!-- DIGEST::"+@digest.to_s+"::DIGEST -->\n"
+		send_data '<!-- DIGEST::'+@digest.to_s+"::DIGEST -->\n"
 		close_connection_after_writing
 		@ip=nil
 		@digest=nil
@@ -74,11 +73,11 @@ class MailNet < EventMachine::Connection
 				@cache.set(@digest,icss) unless @digest==nil
 				@log.info "Caching with digest: #{@digest}" unless @digest==nil
 				warns.each{|w| @warn.warn w}
-				@cache.set("warnings-"+@digest,warns)
+				@cache.set('warnings-'+@digest,warns)
 			rescue Memcached::Error
-				@log.warn "Cache could not be written"
+				@log.warn 'Cache could not be written'
 			end
-			@log.info "Cached warnings: warnings-"+@digest if warns.length > 0
+			@log.info 'Cached warnings: warnings-'+@digest if warns.length > 0
 			icss
 	end
 end
@@ -91,7 +90,7 @@ end
 
 def get_pid
 	if File.exists?($config['pidfile'])
-		file = File.new($config['pidfile'], "r")
+		file = File.new($config['pidfile'], 'r')
 		pid = file.read
 		file.close
  
@@ -104,7 +103,7 @@ end
 def start
 	pid = get_pid
 	if pid != 0
-		warn "Daemon is already running"
+		warn 'Daemon is already running'
 		exit -1
 	end
 	 
@@ -112,7 +111,7 @@ def start
 		run
 	}
 	begin
-		file = File.new($config['pidfile'], "w")
+		file = File.new($config['pidfile'], 'w')
 		file.write(pid)
 		file.close
 		Process.detach(pid)
@@ -126,15 +125,16 @@ def stop
 	pid = get_pid
 	begin
 		EM.stop
-	rescue
+	rescue Exception => e
+		warn 'Could not stop Event machine: '+e.message
 	end
 	 
 	if pid != 0
 		Process.kill('HUP', pid.to_i)
 		File.delete($config['pidfile'])
-		puts "Stopped"
+		puts 'Stopped'
 	else
-		warn "Daemon is not running"
+		warn 'Daemon is not running'
 		exit -1
 	end
 end
