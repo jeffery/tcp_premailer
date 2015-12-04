@@ -60,25 +60,25 @@ class MailNet < EventMachine::Connection
 	end
 	
 	def to_inline_css(html)
-			Premailer::Adapter.use = :nokogiri
-			premailer = Premailer.new(html, :warn_level => Premailer::Warnings::RISKY)
-			warns=[]
-			icss=premailer.to_inline_css
-			premailer.warnings.each do |w|
-				warns.push "#{w[:message]}:(#{w[:level]}): #{w[:clients]}"
-			end
-			html.close
-			html.unlink
-			begin
-				@cache.set(@digest,icss) unless @digest==nil
-				@log.info "Caching with digest: #{@digest}" unless @digest==nil
-				warns.each{|w| @warn.warn w}
-				@cache.set('warnings-'+@digest,warns)
-			rescue Memcached::Error
-				@log.warn 'Cache could not be written'
-			end
-			@log.info 'Cached warnings: warnings-'+@digest if warns.length > 0
-			icss
+		Premailer::Adapter.use = :nokogiri
+		premailer = Premailer.new(html, :warn_level => Premailer::Warnings::RISKY)
+		warns=[]
+		icss=premailer.to_inline_css
+		premailer.warnings.each do |w|
+			warns.push "#{w[:message]}:(#{w[:level]}): #{w[:clients]}"
+		end
+		html.close
+		html.unlink
+		begin
+			@cache.set(@digest,icss) unless @digest==nil
+			@log.info "Caching with digest: #{@digest}" unless @digest==nil
+			warns.each{|w| @warn.warn w}
+			@cache.set('warnings-'+@digest,warns)
+		rescue Memcached::Error
+			@log.warn 'Cache could not be written'
+		end
+		@log.info 'Cached warnings: warnings-'+@digest if warns.length > 0
+		icss
 	end
 end
 
