@@ -13,13 +13,14 @@ $config=YAML.load(File.open(File.dirname(__FILE__)+'/config/tcp_premailer.yaml')
 class MailNet < EventMachine::Connection
 	def initialize(*args)
 		@ip = nil
+    @port = nil
 		@digest = nil
 
 		@cache=Memcached.new("#{$config['memcached_host'].to_s}:#{$config['memcached_port'].to_s}")
 		@warn = Logger.new($config['logfile']+'.warn','monthly')
 		@warn.level = Logger::WARN	
 		@warn.formatter = proc do |severity, datetime, progname, msg|
-			"[#{severity}] #{datetime} (#{@ip}): #{msg}\n"
+			"[#{severity}] #{datetime} (#{@ip}:#{@port}): #{msg}\n"
 		end
 		@log = Logger.new($config['logfile']+'.log','monthly')
 		@log.level = Logger::INFO
