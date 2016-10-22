@@ -18,7 +18,7 @@ class MailNet < EventMachine::Connection
 		@cache=Memcached.new("#{$config['memcached_host'].to_s}:#{$config['memcached_port'].to_s}")
 		@warn = Logger.new($config['logfile']+'.warn','monthly')
 		@warn.level = Logger::WARN	
-		@warn.formatter = proc do |severity, datetime, msg|
+		@warn.formatter = proc do |severity, datetime, progname, msg|
 			"[#{severity}] #{datetime} (#{@ip}): #{msg}\n"
 		end
 		@log = Logger.new($config['logfile']+'.log','monthly')
